@@ -5,7 +5,16 @@
     "action": { "type": "block" },
     "condition": {
       "urlFilter": "||doubleclick.net^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image"]
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame",
+        "stylesheet",
+        "script",
+        "image",
+        "xmlhttprequest",
+        "ping",
+        "other"
+      ]
     }
   },
   {
@@ -14,7 +23,16 @@
     "action": { "type": "block" },
     "condition": {
       "urlFilter": "||googlesyndication.com^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame", "image"]
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame",
+        "stylesheet",
+        "script",
+        "image",
+        "xmlhttprequest",
+        "ping",
+        "other"
+      ]
     }
   },
   {
@@ -22,8 +40,17 @@
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
-      "urlFilter": "||adnxs.com^",
-      "resourceTypes": ["script", "xmlhttprequest", "sub_frame"]
+      "urlFilter": "||criteo.net^",
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame",
+        "stylesheet",
+        "script",
+        "image",
+        "xmlhttprequest",
+        "ping",
+        "other"
+      ]
     }
   },
   {
@@ -31,8 +58,35 @@
     "priority": 1,
     "action": { "type": "block" },
     "condition": {
-      "urlFilter": "||criteo.net^",
-      "resourceTypes": ["script", "xmlhttprequest", "image"]
+      "urlFilter": "||adnxs.com^",
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame",
+        "stylesheet",
+        "script",
+        "image",
+        "xmlhttprequest",
+        "ping",
+        "other"
+      ]
+    }
+  },
+  {
+    "id": 5,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "||googleadservices.com^",
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame",
+        "stylesheet",
+        "script",
+        "image",
+        "xmlhttprequest",
+        "ping",
+        "other"
+      ]
     }
   }
 ]

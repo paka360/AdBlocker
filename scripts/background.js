@@ -1,34 +1,55 @@
-// Keep track of badge counter per tab (using declarativeNetRequestFeedback in dev mode)
-chrome.declarativeNetRequest.onRuleMatchedDebug?.addListener((info) => {
-  if (info.tabId && info.tabId > 0) {
-    chrome.action.setBadgeText({ tabId: info.tabId, text: "BLOCKED" });
-    chrome.action.setBadgeBackgroundColor({ tabId: info.tabId, color: "#E53E3E" });
+/**
+ * ProjectWeek AdBlocker - Service Worker
+ */
+
+// Verify service worker start and rule readiness
+chrome.runtime.onInstalled.addListener(async () => {
+  console.log("[ShieldBlock] Extension installed / reloaded.");
+  
+  // Inspect loaded declarative rulesets to confirm Chrome sees them
+  if (chrome.declarativeNetRequest.getEnabledRulesets) {
+    const activeRulesets = await chrome.declarativeNetRequest.getEnabledRulesets();
+    console.log("[ShieldBlock] Active Static Rulesets:", activeRulesets);
   }
 });
 
-// Listener to handle allowlist toggles from the popup
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === "toggleWhitelist") {
-    handleWhitelistToggle(request.domain, request.enableBlocker).then(() => {
-      sendResponse({ status: "success" });
-    });
-    return true; // Keep message channel open for async response
+// Log any rule matches to the background console
+if (chrome.declarativeNetRequest.onRuleMatchedDebug) {
+  chrome.declarativeNetRequest.onRuleMatchedDebug.addListener((matchInfo) => {
+    console.warn(
+      `[ShieldBlock BLOCKED] Rule ID ${matchInfo.rule.ruleId} matched URL:`,
+      matchInfo.request.url
+    );
+
+    const tabId = matchInfo.request.tabId;
+    if (tabId && tabId > 0) {
+      chrome.action.setBadgeText({ tabId: tabId, text: "🛡️️" });
+      chrome.action.setBadgeBackgroundColor({ tabId: tabId, color: "#DC2626" });
+    }
+  });
+}
+
+// Runtime message handler for allowlisting
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === "toggleWhitelist") {
+    handleWhitelistChange(message.domain, message.enableBlocker)
+      .then(() => sendResponse({ status: "success" }))
+      .catch((err) => sendResponse({ status: "error", message: err.message }));
+    return true;
   }
 });
 
-async function handleWhitelistToggle(domain, enableBlocker) {
-  const RULE_ID_OFFSET = 10000;
-  // Compute deterministic rule ID from domain hash
-  const ruleId = RULE_ID_OFFSET + Math.abs(hashCode(domain) % 10000);
+async function handleWhitelistChange(domain, enableBlocker) {
+  const RULE_BASE_ID = 20000;
+  const computedRuleId = RULE_BASE_ID + Math.abs(computeSimpleHash(domain) % 10000);
 
   if (!enableBlocker) {
-    // Add dynamic allow rule that bypasses blocking for this domain
     await chrome.declarativeNetRequest.updateDynamicRules({
-      removeRuleIds: [ruleId],
+      removeRuleIds: [computedRuleId],
       addRules: [
         {
-          id: ruleId,
-          priority: 2, // Overrides static block rules (priority 1)
+          id: computedRuleId,
+          priority: 2,
           action: { type: "allowAllRequests" },
           condition: {
             initiatorDomains: [domain],
@@ -39,11 +60,8 @@ async function handleWhitelistToggle(domain, enableBlocker) {
               "script",
               "image",
               "font",
-              "object",
               "xmlhttprequest",
               "ping",
-              "media",
-              "websocket",
               "other"
             ]
           }
@@ -51,17 +69,16 @@ async function handleWhitelistToggle(domain, enableBlocker) {
       ]
     });
   } else {
-    // Re-enable blocking: remove the bypass rule
     await chrome.declarativeNetRequest.updateDynamicRules({
-      removeRuleIds: [ruleId]
+      removeRuleIds: [computedRuleId]
     });
   }
 }
 
-function hashCode(str) {
+function computeSimpleHash(inputString) {
   let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = (hash << 5) - hash + str.charCodeAt(i);
+  for (let i = 0; i < inputString.length; i++) {
+    hash = (hash << 5) - hash + inputString.charCodeAt(i);
     hash |= 0;
   }
   return hash;
